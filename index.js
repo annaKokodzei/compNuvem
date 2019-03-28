@@ -62,9 +62,6 @@ app.post('/actor/:name', (req, res) => {
     });
 });
 
-
-
-
 app.get('/maxrating', (req, res) => {
     const query = db.collection('title_ratings').find().sort({'averageRating':-1}).limit(1);
     query.forEach((doc) => {
@@ -81,8 +78,10 @@ app.get('/maxrating', (req, res) => {
 });
 
 app.get('/popular/:num', (req,res) => {
+    console.log("getting")
     var count = 0;
     var numOfMovies = parseInt(req.params.num);
+    console.log("getting the" + numOfMovies + "most popular movies...")
     if(numOfMovies > 0) {
         const query = db.collection('title_ratings').find().sort({'numVotes': -1}).limit(numOfMovies);
         var movie_titles = []
@@ -99,6 +98,7 @@ app.get('/popular/:num', (req,res) => {
     } else {
         res.json([])
     }
+    console.log("done")
 });
 
 
