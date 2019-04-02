@@ -100,24 +100,53 @@ app.get('/popular/:num', (req,res) => {
     console.log("done")
 });
 
-app.get('/query3/:movie', (req, res) => {
+app.get('/actors_from_id/:movie', async (req, res) => {
     var movie = req.params.movie;
-    db.collection('title_basics').findOne({'tconst': movie}).then((result) => {
+    await db.collection('title_basics').findOne({'tconst': movie}).then((result) => {
         console.log("Principal actors from " + result['primaryTitle'] + ":");
     })
-    db.collection('title_principals').find({'tconst': movie, 'category': 'actor'}).toArray( function(err, results) {
-        if(results.length > 0) {
-            for(var i = 0; i<results.length; i++) {
-                db.collection('name_basics').find({'nconst': results[i]['nconst']}).toArray( function(err2, results2) {
-                    var actor_name = results2[0]['primaryName']
-                    console.log(actor_name)
-                })
-            }
-        }
+    let query = await db.collection('title_principals').find({'tconst': movie, 'category': 'actor'}).toArray();
+    let actors = query.map(doc => {
+        return {tconst: doc.nconst};
+    });
+    console.log(actors);
+    let something = [];
+    for(let i = 0; i < actors.length; i++){
+        let names = await db.collection('name_basics').find({'nconst': actors[i].tconst}).toArray();
+        let actorNames = names.map(doc => {
+            console.log(doc.primaryName);
+            return {name: doc.primaryName};
+        });
+        something = [...something,...actorNames];
+        console.log("something: " + something);
+    }
+    res.header('Content-Type', 'text/html').send("<html><p>"+ JSON.stringify(something)+"<p></p></html>");
+});
+
+app.get('/actors_from_title/:movie', async (req, res) => {
+    var movie = req.params.movie;
+    var movie_id = "";
+    await db.collection('title_basics').findOne({'primaryTitle': movie}).then((result) => {
+        movie_id = result['tconst'];
+        console.log("Principal actors from " + result['primaryTitle'] + ":");
     })
-})
-
-
+    let query = await db.collection('title_principals').find({'tconst': movie_id, 'category': 'actor'}).toArray();
+    let actors = query.map(doc => {
+        return {tconst: doc.nconst};
+    });
+    console.log(actors);
+    let something = [];
+    for(let i = 0; i < actors.length; i++){
+        let names = await db.collection('name_basics').find({'nconst': actors[i].tconst}).toArray();
+        let actorNames = names.map(doc => {
+            console.log(doc.primaryName);
+            return {name: doc.primaryName};
+        });
+        something = [...something,...actorNames];
+        console.log("something: " + something);
+    }
+    res.header('Content-Type', 'text/html').send("<html><p>"+ JSON.stringify(something)+"<p></p></html>");
+});
 
 
 //db.title_basics.aggregate({$unwind: "$genres"}, {$match: {startYear: 1895}}, {$group: {_id: "$genres", count:{$sum: 1}}}, {$sort: {"count": -1}}, {$limit : 3})
