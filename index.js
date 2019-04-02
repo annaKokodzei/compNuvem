@@ -118,6 +118,83 @@ app.get('/query3/:movie', (req, res) => {
 })
 
 
+
+
+//db.title_basics.aggregate({$unwind: "$genres"}, {$match: {startYear: 1895}}, {$group: {_id: "$genres", count:{$sum: 1}}}, {$sort: {"count": -1}}, {$limit : 3})
+app.get('/category/:year', async(req, res) => {
+    const year = parseInt(req.params.year);
+    let categor = "";
+    console.log(year);
+    const query = await db.collection("title_basics").aggregate({$unwind: "$genres"}, {$match: {startYear: year}}, {$group: {_id: "$genres", count:{$sum: 1}}}, {$sort: {"count": -1}}, {$limit : 3}).limit(3)
+        .toArray();
+    let categories = query.map(doc =>
+    {
+        return {category:doc._id, counter:doc.count};
+    });
+    for(let i =0; i < categories.length; i++){
+        categor += categories[i].category + "\n";
+        console.log(categories[i].category);
+    }
+    //res.json(query);
+    res.header('Content-Type', 'text/html').send("<html><p> Categorias mais produzidas em " +year + " sao " + categor + "</p></html>");
+
+});
+
+
+app.get('/mostPopularCategory/:year', async(req, res) => {
+    const year = parseInt(req.params.year);
+    const query = await db.collection('title_basics').aggregate([{$lookup:{from: "ratings", localField: "tconst", foreignField: "tconst", as: "ratings"}}, {$match: {startYear:year}}, {$unwind: "$genres"}, {$group: {_id: {genres: "$genres", rating: "$ratings.averageRating"}, count: {$sum :1}}}, {$unwind: "$_id.rating"}, {$group: {_id: "$_id.genres", ret: {$avg: "$_id.rating"}}}, {$sort: {"ret" : -1}}, {$limit: 1}]).toArray();
+    let categories = query.map(doc =>
+    {
+        console.log(doc);
+        return {category:doc._id, rating:doc.ret};
+    });
+    //res.json(query);
+    res.header('Content-Type', 'text/html').send("<html><p> Most successful film category in  " +year + " is " + categories[0].category + "</p></html>");
+});
+
+
+
+app.get('/director', async (req, res) => {
+    const category = { category: "director" };
+    let directorList = [];
+    var topDirectors = 10;
+
+    await db.collection('title_principals').find(category).forEach((result) => {
+        const directorIndex = directorList.findIndex((director) => {
+            return director.nconst === result['nconst'];
+        });
+
+        if (directorIndex === -1) {
+            directorList.push({ nconst: result['nconst'], count: 1 });
+        }else{
+          directorList[directorIndex].count = directorList[directorIndex].count + 1;
+        }
+    });
+
+    console.log(directorList);
+
+    const sortedDirectors = directorList.sort((a, b) => {
+        return a.count - b.count;
+    });
+
+    console.log(sortedDirectors.splice(0, topDirectors));
+
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //-----------------------------------------------UPDATES-------------------------------------------------
 //Acho que isto devia ser removido
 app.get('/update', (req, res) => {
