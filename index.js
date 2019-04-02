@@ -101,6 +101,9 @@ app.get('/popular/:num', (req,res) => {
     console.log("done")
 });
 
+
+
+
 //db.title_basics.aggregate({$unwind: "$genres"}, {$match: {startYear: 1895}}, {$group: {_id: "$genres", count:{$sum: 1}}}, {$sort: {"count": -1}}, {$limit : 3})
 app.get('/category/:year', async(req, res) => {
     const year = parseInt(req.params.year);
@@ -133,6 +136,45 @@ app.get('/mostPopularCategory/:year', async(req, res) => {
     //res.json(query);
     res.header('Content-Type', 'text/html').send("<html><p> Most successful film category in  " +year + " is " + categories[0].category + "</p></html>");
 });
+
+
+
+app.get('/director', async (req, res) => {
+    const category = { category: "director" };
+    let directorList = [];
+    var topDirectors = 10;
+
+    await db.collection('title_principals').find(category).forEach((result) => {
+        const directorIndex = directorList.findIndex((director) => {
+            return director.nconst === result['nconst'];
+        });
+
+        if (directorIndex === -1) {
+            directorList.push({ nconst: result['nconst'], count: 1 });
+        }else{
+          directorList[directorIndex].count = directorList[directorIndex].count + 1;
+        }
+    });
+
+    console.log(directorList);
+
+    const sortedDirectors = directorList.sort((a, b) => {
+        return a.count - b.count;
+    });
+
+    console.log(sortedDirectors.splice(0, topDirectors));
+
+});
+
+
+
+
+
+
+
+
+
+
 
 
 
