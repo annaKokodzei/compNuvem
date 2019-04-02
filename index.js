@@ -78,10 +78,9 @@ app.get('/maxrating', (req, res) => {
 });
 
 app.get('/popular/:num', (req,res) => {
-    console.log("getting")
     var count = 0;
     var numOfMovies = parseInt(req.params.num);
-    console.log("getting the" + numOfMovies + "most popular movies...")
+    console.log("getting the " + numOfMovies + " most popular movies...")
     if(numOfMovies > 0) {
         const query = db.collection('title_ratings').find().sort({'numVotes': -1}).limit(numOfMovies);
         var movie_titles = []
@@ -100,6 +99,23 @@ app.get('/popular/:num', (req,res) => {
     }
     console.log("done")
 });
+
+app.get('/query3/:movie', (req, res) => {
+    var movie = req.params.movie;
+    db.collection('title_basics').findOne({'tconst': movie}).then((result) => {
+        console.log("Principal actors from " + result['primaryTitle'] + ":");
+    })
+    db.collection('title_principals').find({'tconst': movie, 'category': 'actor'}).toArray( function(err, results) {
+        if(results.length > 0) {
+            for(var i = 0; i<results.length; i++) {
+                db.collection('name_basics').find({'nconst': results[i]['nconst']}).toArray( function(err2, results2) {
+                    var actor_name = results2[0]['primaryName']
+                    console.log(actor_name)
+                })
+            }
+        }
+    })
+})
 
 
 //-----------------------------------------------UPDATES-------------------------------------------------
